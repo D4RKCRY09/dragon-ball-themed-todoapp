@@ -1,98 +1,44 @@
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Models;
 
-[Route("api/[controller]")]
-[ApiController]
-public class LeaderboardController : ControllerBase
+namespace Backend.Controllers
 {
-    private readonly BackendContext _context;
-    public LeaderboardController(BackendContext context)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class LeaderBoardController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly BackendContext _context;
 
-    // GET: api/CanonChar
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<CanonChar>>> GetCanonChar()
-    {
-        return await _context.CanonChar.ToListAsync();
-    }
-
-    // GET: api/CanonChar/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<CanonChar>> GetCanonChar(int id)
-    {
-        var canonchar = await _context.CanonChar.FindAsync(id);
-
-        if (canonchar == null)
+        public LeaderBoardController(BackendContext context)
         {
-            return NotFound();
+            _context = context;
         }
 
-        return canonchar;
-    }
-
-    // PUT: api/CanonChar/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutCanonChar(int? id, CanonChar canonchar)
-    {
-        if (id != canonchar.Id)
+        [HttpGet]
+        
+        public async Task<IActionResult> Get()
         {
-            return BadRequest();
-        }
+            var canon = await _context.CanonChar.ToListAsync();
 
-        _context.Entry(canonchar).State = EntityState.Modified;
+            var realUsers = await _context.Users.ToListAsync();
 
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!CanonCharExists(id))
+            if(realUsers.Count > 0)
             {
-                return NotFound();
+                foreach (var user in realUsers)
+                {
+                    canon.Add(new CanonChar
+                    {
+                        Name = user.UserName,
+                        CanonPL = user.PowerLevel
+                    });
+                }
             }
-            else
-            {
-                throw;
-            }
+
+            canon = canon.OrderByDescending(x => x.CanonPL).ToList();
+
+            return Ok(canon);
         }
-
-        return NoContent();
-    }
-
-    // POST: api/CanonChar
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPost]
-    public async Task<ActionResult<CanonChar>> PostCanonChar(CanonChar canonchar)
-    {
-        _context.CanonChar.Add(canonchar);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetCanonChar", new { id = canonchar.Id }, canonchar);
-    }
-
-    // DELETE: api/CanonChar/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteCanonChar(int? id)
-    {
-        var canonchar = await _context.CanonChar.FindAsync(id);
-        if (canonchar == null)
-        {
-            return NotFound();
-        }
-
-        _context.CanonChar.Remove(canonchar);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    private bool CanonCharExists(int? id)
-    {
-        return _context.CanonChar.Any(e => e.Id == id);
     }
 }
